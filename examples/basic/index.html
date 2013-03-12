@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bland Chart: Example 1</title>
+        <link rel="stylesheet" href="../../blandchart.css" type="text/css" media="screen">
+        
+    </head>
+    <body>
+        
+        <div id="target"></div>
+        
+        <script type="template" id="blandchart-tpl-yaxis">
+            <div class="chart-yaxis" style="color:<%= color %>">
+                <h3 class="yaxis-label"><%= label %></h3>
+                <ul class="<%= key %>-yaxis">
+                
+                    <% _.each(markers, function(marker) {%>
+                    
+                        <li class="chart-yaxis-marker <%= marker.mark_class %>" style="top: <%= marker.top %>; bottom:<%= marker.bottom %>;">
+                            <span class="label"><%= marker.label %></span>
+                            <span class="mark" style="background-color:<%= color %>"></span>
+                        </li>
+                
+                    <% }) %>
+                
+                </ul>
+            </div>
+        </script>
+        
+        <script src="../../vendor/jquery.js"></script>
+        <script src="../../vendor/underscore.js"></script>
+        <script src="../../vendor/backbone.js"></script>
+        <script src="../../vendor/raphael.js"></script>
+        <script src="js/bundle.js"></script>
+        
+    </body>
+</html>

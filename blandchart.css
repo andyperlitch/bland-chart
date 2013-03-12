@@ -1,0 +1,94 @@
+.bland-chart {
+  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", "Helvetica", "Myriad Pro", Myriad, Geneva, Arial, "Lucida Grande", sans-serif;
+  font-size: 12px;
+}
+.bland-chart .chart-yaxes,
+.bland-chart .chart-overviewport,
+.bland-chart .chart-yaxis {
+  display: inline-block;
+  vertical-align: top;
+}
+.bland-chart .chart-yaxes .chart-yaxis {
+  height: 100%;
+  position: relative;
+  padding: 0 10px;
+  margin: 0;
+  text-align: right;
+  border-right: 1px solid black;
+}
+.bland-chart .chart-yaxes .chart-yaxis .yaxis-label {
+  -moz-transform: scale(1) rotate(-90deg) translateX(0px) translateY(0px) skewX(0deg) skewY(0deg);
+  -webkit-transform: scale(1) rotate(-90deg) translateX(0px) translateY(0px) skewX(0deg) skewY(0deg);
+  transform: scale(1) rotate(-90deg) translateX(0px) translateY(0px) skewX(0deg) skewY(0deg);
+  position: absolute;
+  top: 45%;
+  left: 0;
+  padding: 0;
+  margin: 0;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul {
+  padding: 0 10px;
+  list-style-type: none;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul .chart-yaxis-marker {
+  position: absolute;
+  right: 0;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul .chart-yaxis-marker.top .label {
+  top: 0;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul .chart-yaxis-marker.top .mark {
+  vertical-align: top;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul .chart-yaxis-marker.bottom .label {
+  top: 0;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul .chart-yaxis-marker .label {
+  position: relative;
+  top: 0.5em;
+}
+.bland-chart .chart-yaxes .chart-yaxis ul .chart-yaxis-marker .mark {
+  display: inline-block;
+  vertical-align: bottom;
+  height: 1px;
+  width: 10px;
+  background-color: black;
+}
+.bland-chart .chart-xaxis ul {
+  box-shadow: 0 -1px 0 0 #000000;
+  position: relative;
+  height: 2em;
+  margin: 0;
+  line-height: 2em;
+  list-style-type: none;
+}
+.bland-chart .chart-xaxis ul .mark {
+  padding: 0 3px;
+  position: absolute;
+  box-shadow: inset 1px 0 0 black;
+}
+.bland-chart .chart-xaxis ul .mark.right {
+  box-shadow: inset -1px 0 0 #000000;
+}
+.bland-chart .chart-viewport path.gridline {
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+  stroke: rgba(0, 0, 0, 0.1);
+}
+.bland-chart .chart-viewport path.plotline {
+  stroke-width: 3px;
+  fill: none;
+}
+.bland-chart .chart-viewport path.plotline_ds {
+  stroke-width: 4px;
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.2);
+}
+.bland-chart .chart-viewport circle.plotpoint {
+  fill: #FFFFFF;
+  z-index: 1;
+  stroke-width: 2px;
+}
+.bland-chart .chart-viewport circle.plotpoint:hover {
+  stroke-width: 4px;
+}
