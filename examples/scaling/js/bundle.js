@@ -679,7 +679,6 @@ var BlandChartView = BaseView.extend({
     
     render: function() {
         if (this.model.get('no_render')) return;
-        console.log("entire re-rendering");
         // Destroy all views
         this.clearViews();
         
@@ -1048,7 +1047,6 @@ var Viewport = Backbone.View.extend({
         var $popup = [];
         point
             .mouseover(function(evt){
-                console.log("evt",evt);
                 self.model.unscheduleFunction("point_mouseout");
                 point.animate({"r":10},300, "elastic");
                 self.model.set('no_render', true);
@@ -1061,7 +1059,8 @@ var Viewport = Backbone.View.extend({
                     y_key: y_axis_key,
                     y_value: model.get(y_axis_key),
                     top: evt.clientY,
-                    right: self.model.get('viewport_width') - evt.clientX
+                    right: self.model.get('viewport_width') - evt.clientX,
+                    color: plot.get("color")
                 }
                 var markup = template(json);
                 $popup = $(markup.trim()).appendTo(self.$el);
