@@ -25,6 +25,7 @@
   left: 0;
   padding: 0;
   margin: 0;
+  font-weight: bold;
 }
 .bland-chart .chart-yaxes .chart-yaxis ul {
   padding: 0 10px;
@@ -112,4 +113,7 @@
 }
 .bland-chart .chart-viewport circle.plotpoint:hover {
   stroke-width: 4px;
+}
+.bland-chart .chart-overview {
+  overflow: hidden;
 }
