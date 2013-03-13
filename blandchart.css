@@ -70,6 +70,17 @@
 .bland-chart .chart-xaxis ul .mark.right {
   box-shadow: inset -1px 0 0 #000000;
 }
+.bland-chart .chart-viewport {
+  position: relative;
+}
+.bland-chart .chart-viewport .chart-pointinfo {
+  position: absolute;
+  background: #FFF;
+  z-index: 1;
+  box-shadow: inset 0 -1px 46px -7px rgba(0, 0, 0, 0.1), 0 1px 7px -2px rgba(0, 0, 0, 0.5);
+  padding: 0 10px;
+  border-radius: 5px;
+}
 .bland-chart .chart-viewport path.gridline {
   stroke-width: 1px;
   shape-rendering: crispEdges;
@@ -83,6 +94,10 @@
   stroke-width: 4px;
   fill: none;
   stroke: rgba(0, 0, 0, 0.2);
+}
+.bland-chart .chart-viewport rect.plot-helper {
+  stroke: 0;
+  fill: rgba(0, 0, 0, 0);
 }
 .bland-chart .chart-viewport circle.plotpoint {
   fill: #FFFFFF;

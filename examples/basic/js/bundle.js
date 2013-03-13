@@ -639,11 +639,22 @@ var BlandChart = Backbone.Model.extend({
         var extrema = this.getViewportXExtrema();
         var real_range = extrema.max - extrema.min;
         var pixel_range = this.get('viewport_width');
-        var x_ratio = pixel_range/real_range;
+        var x_ratio = real_range === 0 ? 0 : pixel_range/real_range;
         var pixel_offset = (real_offset - extrema.min) * x_ratio;
         return pixel_offset;
-    }
+    },
     
+    scheduleFunction: function(key, fn, delay) {
+        this.schedule = this.schedule || {};
+        if (this.schedule[key] !== undefined) clearTimeout(this.schedule[key]);
+        this.schedule[key] = setTimeout(fn,delay);
+    },
+    
+    unscheduleFunction: function(key) {
+        if (this.schedule === undefined) return;
+        clearTimeout(this.schedule[key]);
+        delete this.schedule[key];
+    }
 });
 
 exports = module.exports = BlandChart
@@ -656,12 +667,12 @@ var Yaxes = require('./Yaxes');
 var Xaxis = require('./Xaxis');
 
 var BlandChartView = BaseView.extend({
-    
+
+    // Re-render the entire chart when plots are added or removed,
+    // and when the key to the x values has changed.
     initialize: function() {
-        // Events that require full re-renders of the chart
-        this.listenTo(this.model, "change:x_axis_key", this.render);
         this.listenTo(this.model.plots, "add remove", this.render );
-        
+        this.listenTo(this.model, "change:x_axis_key", this.render);
     },
     
     template: _.template('<div class="chart-yaxes"></div><div class="chart-overviewport"><div class="chart-viewport"></div><div class="chart-xaxis"></div><div class="chart-overview"></div></div>'),
@@ -824,12 +835,26 @@ exports = module.exports = Slider
 });
 
 require.define("/lib/views/Viewport.js",function(require,module,exports,__dirname,__filename,process,global){var util = require('../util');
+var PathPoint = require('./PathPoint');
+// The focused viewing area of the chart: 
+//    +------------------------------+
+//    |                              | 
+//    |                              | 
+//    |          Viewport            | 
+//    |                              | 
+//    |                              | 
+//    |                              | 
+//    +------------------------------+
+//    | \__/---\/-\_____/---\/-\/--- |
+//    +------------------------------+ 
+// 
 var Viewport = Backbone.View.extend({
-
+    
+    // Re-renders whenever the charting mode is changed and when the plots object gets updated.
     initialize: function() {
         
         this.listenTo(this.model, "change:mode",this.render);
-        this.listenTo(this.collection, "add", this.render);
+        this.listenTo(this.model.plots, "update", this.render);
         
     },
     
@@ -876,6 +901,9 @@ var Viewport = Backbone.View.extend({
     drawData: function(data) {
         if (!data.length){
             // TODO: display "waiting for data"
+            var rtext = this.canvas.text(this.model.get("viewport_width")/2,10,"Waiting for Data...");
+            util.addClass(rtext, "waiting-text");
+            // this.model.set('no_render',true);
             return;
         }
         var x_axis_key = this.model.get('x_axis_key');
@@ -889,12 +917,12 @@ var Viewport = Backbone.View.extend({
         });
         switch(this.model.get("mode")){
             default:
-                this.drawLine(plotPoints, x_axis_key, this.canvas);
+                this.drawLineGraph(plotPoints, x_axis_key, this.canvas);
             break;
         }
     },
     
-    drawLine: function(plotPoints, x_axis_key, canvas) {
+    _drawLineGraph: function(plotPoints, x_axis_key, canvas) {
         
         var self = this;
         var toX = self.model.toViewportX;
@@ -917,7 +945,7 @@ var Viewport = Backbone.View.extend({
                 var pathpoint = canvas.circle(x,y,5);
                 util.addClass(pathpoint, "plotpoint").removeData();
                 pointset.push(pathpoint);
-                self.delegatePointEvents(pathpoint);
+                self.delegatePointEvents.call(self, pathpoint, point, x_axis_key, y_axis_key, plot);
             });
             path.pop();
             if (plotPoints.length > 1) {
@@ -937,15 +965,116 @@ var Viewport = Backbone.View.extend({
         
     },
     
-    delegatePointEvents: function(point) {
+    drawLineGraph: function(plotPoints, x_axis_key, canvas) {
+        // this._drawLineGraph(plotPoints, x_axis_key, canvas);
+        // Cache instance and the x-coordinate conversion function
         var self = this;
+        var toX = self.model.toViewportX;
+        
+        // For each piece of data, there has to be an invisible rectangle 
+        // that acts as the interactive (helper) surface. For these we need to create
+        // a set.
+        var helpers = canvas.set();
+        
+        // We also need to aggregate info about the individual plots,
+        // which we will store here.
+        var plot_info = {}
+        
+        for (var i=0; i < plotPoints.length; i++) {
+            var point = plotPoints[i];
+            var x_coord = toX.call( self.model,  point.get(x_axis_key) );
+            // Start the rect half way between the previous point 
+            // and the current point (by averaging the x values)
+            var x_start = i === 0 
+                ? 0 
+                : ( toX.call( self.model,plotPoints[i-1].get(x_axis_key) ) + x_coord ) / 2;
+            // End halfway between current and next point
+            var x_end = i === (plotPoints.length - 1) 
+                ? self.model.get('viewport_width') 
+                : (toX.call( self.model,  plotPoints[i+1].get(x_axis_key) ) + x_coord ) / 2;
+            // Create the helper object and delegate events
+            var helper = canvas.rect(x_start, 0, x_end - x_start, self.model.get('viewport_height') );
+            util.addClass( helper, "plot-helper");
+            helpers.push( helper );
+            
+            // Add to each plot set
+            this.model.plots.each(function(plot){
+                var key = plot.get("key");
+                // Check that it has been initialized
+                if (plot_info[key] === undefined) {
+                    plot_info[key] = { 
+                        path: ["M"], 
+                        points: canvas.set(),
+                        color:plot.get('color')
+                    }
+                }
+                // Get the y coordinate
+                var y_coord = plot.toViewportY(point.get(key));
+                // Append to the path
+                plot_info[key].path.push(x_coord+","+y_coord,"L");
+                // Create the point element
+                var pathpoint = canvas.circle(x_coord, y_coord, 5);
+                util.addClass(pathpoint, "plotpoint").removeData();
+                // Add to the set
+                plot_info[key].points.push( pathpoint );
+                // delegate events
+                self.delegatePointEvents.call(self, pathpoint, point, x_axis_key, key, plot);
+            });
+            
+        };
+        
+        for(var y_key in plot_info) {
+            var info = plot_info[y_key];
+            var path = info.path;
+            var color = info.color;
+            var points = info.points;
+            
+            if (plotPoints.length > 1) {
+                var line = canvas.path(path.join(""));
+                util.addClass(line, "plotline")
+                line.removeData();
+                var line_ds = window.line_ds = line.clone();
+                util.addClass(line_ds, "plotline_ds").transform("T1,1");
+                line.attr("stroke", color);
+                line.toFront();
+                
+            }
+            points.attr("stroke", color).toFront();
+        }
+    },
+    
+    delegatePointEvents: function(point, model, x_axis_key, y_axis_key, plot) {
+        var self = this;
+        var $popup = [];
         point
-            .mouseover(function(){
+            .mouseover(function(evt){
+                console.log("evt",evt);
+                self.model.unscheduleFunction("point_mouseout");
+                point.animate({"r":10},300, "elastic");
                 self.model.set('no_render', true);
+                var template = _.template($("#blandchart-tpl-pointinfo").html());
+                var x_formatter = self.model.get('x_axis_formatter');
+                var json = {
+                    label: plot.get("label"),
+                    x_key: x_axis_key,
+                    x_value: typeof x_formatter === "function" ? x_formatter(model.get(x_axis_key)) : model.get(x_axis_key) ,
+                    y_key: y_axis_key,
+                    y_value: model.get(y_axis_key),
+                    top: evt.clientY,
+                    right: self.model.get('viewport_width') - evt.clientX
+                }
+                var markup = template(json);
+                $popup = $(markup.trim()).appendTo(self.$el);
             })
             .mouseout(function(){
-                self.model.set('no_render', false);
-                self.model.view.render();
+                if ($popup.length) $popup.empty().remove();
+                point.animate({"r":5},300, "elastic");
+                
+                self.model.scheduleFunction("point_mouseout",function(){
+                    self.model.set('no_render', false);
+                    self.model.view.render();
+                }, 1000);
+                
             })
         ;
         
@@ -962,10 +1091,42 @@ require.define("/lib/util.js",function(require,module,exports,__dirname,__filena
 }
 });
 
+require.define("/lib/views/PathPoint.js",function(require,module,exports,__dirname,__filename,process,global){// Wrapper for a Raphael circle elements
+var PathPoint = Backbone.View.extend({
+    
+    initialize: function(options) {
+        this.canvas = options.canvas;
+        this.chart = options.chart;
+        this.points = this.canvas.set();
+        this.on("hover", this.onhover );
+        this.on("mouseout", this.onmouseout );
+        this.r = 5;
+        this.r_hover = 10;
+    },
+    
+    // Adds a Raphael circle to this view's internal hash
+    addPoint:function(circle) {
+        circle.attr({"r":this.r});
+        this.points.push(circle);
+    },
+    
+    onhover: function() {
+        this.allpointviews.forEach(function(view){view.onmouseout()});
+        this.points.animate({"r":this.r_hover}, 500, "elastic");
+    },
+    
+    onmouseout: function() {
+        this.points.attr({"r":this.r});
+    }
+    
+});
+exports = module.exports = PathPoint
+});
+
 require.define("/lib/views/Yaxes.js",function(require,module,exports,__dirname,__filename,process,global){var Yaxes = Backbone.View.extend({
     
     initialize: function() {
-        this.listenTo(this.model.plots, "change", this.render);
+        this.listenTo(this.model.plots, "change update", this.render);
     },
     
     render: function() {
@@ -1117,6 +1278,7 @@ var Plots = Backbone.Collection.extend({
         this.chart = options.chart;
         this.on("add",function(model){
             model.chart = this.chart;
+            model.listenToDataChange(model.chart.data);
             model.setUp();
         });
         this.on("change",function(model){
@@ -1130,11 +1292,16 @@ exports = module.exports = Plots
 });
 
 require.define("/lib/models/Plot.js",function(require,module,exports,__dirname,__filename,process,global){var Markers = require('../collections/Markers');
+// A Plot is an object that represents a logical grouping of data, i.e.
+// data from the same key on incoming json objects. It is used to set the 
+// y-axis scale, and convert data values to pixel y-values on the canvas.
 var Plot = Backbone.Model.extend({
+    
     
     defaults: {
 
-        // Bounds of the Y axis
+        // Bounds of the Y axis. A string of "auto" means that the 
+        // Y axis for this plot should scale with the data
         lowerY: "auto",
         upperY: "auto",
         
@@ -1142,31 +1309,48 @@ var Plot = Backbone.Model.extend({
         // data starts being omitted from rendering.
         max_detail: 5,
         
-        // Color of the line
+        // Color of the line/bar/etc that will be drawn.
         color: "#000000",
         
+        // The label for the plot (will be displayed
+        // on the y-axis and on pointinfo boxes)
         label: ""
         
     },
     
     idAttribute: "key",
     
+    initialize: function() {
+        this.actualLower = this.get("lowerY");
+        this.actualUpper = this.get("upperY");
+    },
+    
+    listenToDataChange: function(data) {
+        var self = this;
+        this.listenTo(data, "add", function() {
+            if (self.get('lowerY') === "auto" || self.get('upperY') === "auto") self.setUp();
+            else self.trigger("update");
+        });
+    },
+    
     setUp: function() {
         
-        // Create markers collection
+        // Stores the markers for the y-axis of this plot. 
         this.markers = new Markers([], {
             plot: this
         })
         
-        // Generate markers
-        // determine lower and upper bounds
+        // The markers are generated based on the size of the viewport and the upper
+        // and lower bounds of plot y-axis. This will need to be dynamically computed
+        // if the values of lowerY and upperY are set to "auto" and not static numbers.
         var lower = this.get('lowerY');
         var upper = this.get('upperY');
+        // Object that holds the minimum and maximum values from the dataset
         var extrema;
         var ten_percent;
         if ( lower === "auto" ) {
             extrema = this.chart.data.getYExtrema(this.get("key"));
-            console.log("extrema",extrema);
+            // debugger; 
             // 10% on either side of the extremas
             ten_percent = (extrema.max - extrema.min)*0.1;
             if (ten_percent === 0) {
@@ -1180,10 +1364,13 @@ var Plot = Backbone.Model.extend({
             ten_percent = ten_percent || (extrema.max - extrema.min)*0.1 ;
             upper = extrema.max + ten_percent;
         }
-        console.log("lower, upper", lower, upper);
+        
+        // Set the actual bounds
+        this.actualLower = lower;
+        this.actualUpper = upper;
+        
         // Get the range
         var range = upper - lower;
-        
         // Get number of markers to show
         var max_markers = Math.floor( this.chart.get("viewport_height") / this.chart.get("min_spacing_y"));
         var pixel_increments = this.chart.get("viewport_height") / max_markers;
@@ -1194,7 +1381,7 @@ var Plot = Backbone.Model.extend({
             var marker = { 
                 top: "auto",
                 bottom: i < max_markers ? (i * pixel_increments)+"px" : "auto", 
-                label: this.createAxisLabel(i,value_increments,range),
+                label: this.createAxisLabel(i,value_increments, lower, range),
                 mark_class: ""
             }
             if (i === max_markers) {
@@ -1205,25 +1392,30 @@ var Plot = Backbone.Model.extend({
             }
             this.markers.add(marker, {merge: true});
         }
-        
+        this.trigger("update");
     },
     
-    createAxisLabel: function(i, increment, range) {
+    createAxisLabel: function(i, increment, lower, range) {
         
-        console.log("increment",increment);
+        // TODO: smarter algorithm for rounding labels to their significant digits
+        var next = i*increment+lower;
         
-        return i*increment;
+        if (increment < 1) return Math.round(next*10)/10;
+        else if (increment > 1000000000) return (Math.round(next/10000000)/100)+"B";
+        else if (increment > 1000000) return (Math.round(next/10000)/100)+"M";
+        else if (increment > 100) return (Math.round(next/100)/10)+"K";
+        return Math.round(i*increment);
     },
     
     toViewportY: function(y) {
         // point = { x: [X], y: [Y] }
-        var real_yrange = this.get("upperY") - this.get("lowerY");
+        // debugger;
+        var real_yrange = this.actualUpper - this.actualLower;
         var pixel_yrange = this.chart.get("viewport_height");
         var y_ratio = pixel_yrange / real_yrange;
-        var y_pixels = y * y_ratio ;
+        var y_pixels = (y-this.actualLower) * y_ratio ;
         // flip to adjust for downward-facing y axis
         var y1 = pixel_yrange - y_pixels ;
-        
         return y1;
     },
     

@@ -25,7 +25,7 @@ $(function() {
     
     function genRandomData() {
         var time = +new Date();
-        var point1 = Math.round(Math.random() * 500);
+        var point1 = 5000 - Math.round(Math.random() * 5000);
         var point2 = Math.round(Math.random() * 100);
         return { time: time, point1: point1, point2: point2 }
     }
@@ -36,7 +36,7 @@ $(function() {
         var data = genRandomData();
         datasource.trigger("data", data);
         
-    }, 2000);
+    }, 1500);
     
     // setTimeout(function(){
     //     clearInterval(intval);
