@@ -86,6 +86,37 @@
 			}
 		}
 	}
+	.chart-overviewport {
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		position:relative;
+		.chart-resizer {
+			position:absolute;
+			left:100%;
+			top:10px;
+			width:12px;
+			height:40px;
+			padding:5px 1px 5px 5px;
+			border-radius: 0 5px 5px 0;
+			background:#FFF;
+			box-shadow: inset 1px 0 0 black, inset 0 0 0 1px rgba(0,0,0,0.4),inset 0 0 10px -3px rgba(0,0,0,0.6), 0 2px 4px -1px rgba(0,0,0,0.4);
+			cursor: col-resize;
+			&.active {
+				box-shadow: inset 1px 0 0 black,inset 0 2px 12px -3px rgba(0,0,0,0.5), 0 -1px 2px -1px rgba(0,0,0,0.4);
+			}
+			.resizer-grip {
+				height:40px;
+				width:1px;
+				margin:0 1px;
+				float:left;
+				background:rgba(0,0,0,0.3); 
+			}
+		}
+	}
 	.chart-viewport {
 		position:relative;
 		border-right:1px solid black;
@@ -137,6 +168,7 @@
 			}
 		}
 	}
+	
 	.chart-overview {
 		overflow: hidden;
 	}

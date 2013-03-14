@@ -468,6 +468,11 @@ var BlandChart = Backbone.Model.extend({
         
     },
     
+    
+    validate: function(attrs) {
+        if (attrs.viewport_width < 0) return "viewport width must be 0 or more.";
+    },
+    
     // This sets the el for the main chart view.
     // Acceptable values for the parameter are a jQuery collection (first element is selected),
     // a DOM Element, or a jQuery selector string.
@@ -587,6 +592,7 @@ var BlandChart = Backbone.Model.extend({
     // Completely clears the chart.
     clear: function() {
         this.data.reset([]);
+        this.view.render();
     },
     
     // Stops the chart from making any actions. Useful for when the widget is 
@@ -665,6 +671,7 @@ var Overview = require('./Overview');
 var Viewport = require('./Viewport');
 var Yaxes = require('./Yaxes');
 var Xaxis = require('./Xaxis');
+var Resizer = require('./Resizer');
 
 var BlandChartView = BaseView.extend({
 
@@ -672,10 +679,10 @@ var BlandChartView = BaseView.extend({
     // and when the key to the x values has changed.
     initialize: function() {
         this.listenTo(this.model.plots, "add remove", this.render );
-        this.listenTo(this.model, "change:x_axis_key", this.render);
+        this.listenTo(this.model, "change:x_axis_key change:viewport_width", this.render);
     },
     
-    template: _.template('<div class="chart-yaxes"></div><div class="chart-overviewport"><div class="chart-viewport"></div><div class="chart-xaxis"></div><div class="chart-overview"></div></div>'),
+    template: _.template('<div class="chart-yaxes"></div><div class="chart-overviewport"><div class="chart-resizer"><div class="resizer-grip"></div><div class="resizer-grip"></div><div class="resizer-grip"></div></div><div class="chart-viewport"></div><div class="chart-xaxis"></div><div class="chart-overview"></div></div>'),
     
     render: function() {
         if (this.model.get('no_render')) return;
@@ -686,10 +693,11 @@ var BlandChartView = BaseView.extend({
         this.$el.html(this.template({})).css({ height: (this.model.get("overview_height") + this.model.get("viewport_height"))+"px"})
         
         // Create all necessary views (with elements)
-        this.setView("overview", new Overview({ model: this.model, collection: this.model.data, el: this.$(".chart-overview")[0] }) );
+        if (this.model.get("overview")) this.setView("overview", new Overview({ model: this.model, collection: this.model.data, el: this.$(".chart-overview")[0] }) );
         this.setView("viewport", new Viewport({ model: this.model, collection: this.model.data, el: this.$(".chart-viewport")[0] }) );
         this.setView("yaxes", new Yaxes({ model: this.model, collection: this.model.data, el: this.$(".chart-yaxes")[0] }) );
         this.setView("xaxis", new Xaxis({ model: this.model, collection: this.model.data, el: this.$(".chart-xaxis")[0] }) );
+        this.setView("resizer", new Resizer({ model: this.model , el: this.$(".chart-resizer")[0] }) );
         
         // Render views
         this.renderSubs();
@@ -858,9 +866,8 @@ var Viewport = Backbone.View.extend({
     },
     
     render: function() {
-        if (this.model.get('no_render')) return;
+        if (this.model.get('no_render') ) return;
         var self = this;
-        
         // Get dimensions
         var height = this.model.get("viewport_height");
         var width = this.model.get("viewport_width");
@@ -877,7 +884,6 @@ var Viewport = Backbone.View.extend({
         );
         this.drawGrid(this.model.plots);
         this.drawData(this.collection);
-        
         return this;
     },
     
@@ -919,49 +925,6 @@ var Viewport = Backbone.View.extend({
                 this.drawLineGraph(plotPoints, x_axis_key, this.canvas);
             break;
         }
-    },
-    
-    _drawLineGraph: function(plotPoints, x_axis_key, canvas) {
-        
-        var self = this;
-        var toX = self.model.toViewportX;
-        
-        // Loop through the plots
-        this.model.plots.each(function(plot){
-            var toY = plot.toViewportY;
-            var y_axis_key = plot.get('key');
-            var path = ["M"];
-            var pointset = canvas.set();
-            
-            // Loop through the points
-            plotPoints.forEach(function(point){
-                // Build on the path
-                var x = toX.call( self.model, point.get( x_axis_key ) );
-                var y = toY.call( plot, point.get( y_axis_key ) );
-                path.push(x+","+y,"L");
-                
-                // Create point object
-                var pathpoint = canvas.circle(x,y,5);
-                util.addClass(pathpoint, "plotpoint").removeData();
-                pointset.push(pathpoint);
-                self.delegatePointEvents.call(self, pathpoint, point, x_axis_key, y_axis_key, plot);
-            });
-            path.pop();
-            if (plotPoints.length > 1) {
-                var line = canvas.path(path.join(""));
-                util.addClass(line, "plotline")
-                line.removeData();
-                var line_ds = window.line_ds = line.clone();
-                util.addClass(line_ds, "plotline_ds").transform("T1,1");
-                line.attr("stroke", plot.get('color'));
-                line.toFront();
-                
-            }
-            pointset.attr("stroke", plot.get('color')).toFront();
-            
-            
-        });
-        
     },
     
     drawLineGraph: function(plotPoints, x_axis_key, canvas) {
@@ -1058,8 +1021,8 @@ var Viewport = Backbone.View.extend({
                     x_value: typeof x_formatter === "function" ? x_formatter(model.get(x_axis_key)) : model.get(x_axis_key) ,
                     y_key: y_axis_key,
                     y_value: model.get(y_axis_key),
-                    top: evt.clientY,
-                    right: self.model.get('viewport_width') - evt.clientX,
+                    top: evt.clientY - self.$el.offset().top + 10 + window.scrollY,
+                    right: self.model.get('viewport_width') - (evt.clientX - self.$el.offset().left) - 50 + + window.scrollX,
                     color: plot.get("color")
                 }
                 var markup = template(json);
@@ -1078,7 +1041,6 @@ var Viewport = Backbone.View.extend({
         ;
         
     }
-    
 });
 
 exports = module.exports = Viewport
@@ -1229,6 +1191,46 @@ require.define("/lib/views/Xaxis.js",function(require,module,exports,__dirname,_
     
 });
 exports = module.exports = Xaxis
+});
+
+require.define("/lib/views/Resizer.js",function(require,module,exports,__dirname,__filename,process,global){var Resizer = Backbone.View.extend({
+    
+    events: {
+        "mousedown": "grabResizer"
+    },
+    
+    render: function() {
+        return this;
+    },
+    
+    grabResizer: function(evt) {
+        console.log("grab");
+        evt.preventDefault();
+        evt.originalEvent.preventDefault();
+        
+        var self = this;
+        var initialX = evt.clientX;
+        var initialWidth = this.model.get("viewport_width");
+        
+        function resize(evt) {
+            evt.preventDefault();
+            evt.originalEvent.preventDefault();
+            var delta = evt.clientX - initialX;
+            var newWidth = initialWidth + delta;
+            self.model.set({"viewport_width":newWidth});
+        }
+        
+        function release(evt) {
+            $(window).off("mousemove", resize);
+        }
+        
+        $(window).one("mouseup", release);
+        $(window).on("mousemove", resize);
+    }
+    
+});
+
+exports = module.exports = Resizer
 });
 
 require.define("/lib/collections/Data.js",function(require,module,exports,__dirname,__filename,process,global){var DataPoint = require("../models/DataPoint");
