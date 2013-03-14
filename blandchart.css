@@ -73,6 +73,9 @@
 }
 .bland-chart .chart-viewport {
   position: relative;
+  border-right: 1px solid black;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
 }
 .bland-chart .chart-viewport .chart-pointinfo {
   position: absolute;
