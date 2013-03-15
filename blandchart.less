@@ -13,7 +13,7 @@
 		.chart-yaxis {
 			height:100%;
 			position:relative;
-			padding:0 10px;
+			padding:0 10px 0 2em;
 			margin:0;
 			text-align:right;
 			border-right:1px solid black;
@@ -24,10 +24,11 @@
 				transform: scale(1) rotate(-90deg) translateX(0px) translateY(0px) skewX(0deg) skewY(0deg);
 				position: absolute;
 				top: 45%;
-				left: 0;
 				padding: 0;
 				margin: 0;
 				font-weight:bold;
+				font-size:13px;
+				line-height:13px;
 			}
 			
 			ul {
@@ -156,7 +157,7 @@
 			stroke: rgba(0, 0, 0, 0.2);
 		}
 		rect.plot-helper {
-			stroke: 0;
+			stroke: rgba(0,0,0,0);
 			fill: rgba(0,0,0,0);
 		}
 		circle.plotpoint {

@@ -5,7 +5,8 @@ var chart = window.chart = new Chart({
     max_data: 20,
     viewport_width: 1000,
     viewport_height: 400,
-    overview_height: 100
+    overview_height: 100,
+    id: "akjdsfhalkjdldfkjasdlfkjasd"
     
 });
 var datasource = _.extend({}, Backbone.Events);

@@ -404,6 +404,11 @@ var BlandChart = Backbone.Model.extend({
     
     defaults: {
         
+        // This is the unique ident for this chart. This is used to
+        // store stateful info in localStorage, eg. the current width
+        // of the viewport, etc.
+        id: false,
+        
         // Flag indicating if the widget should be active or not.
         // See this.sleep() and this.wakeup()
         asleep: false,
@@ -466,8 +471,28 @@ var BlandChart = Backbone.Model.extend({
             chart: this
         });
         
+        // check for stored info
+        this.loadStoredInfo();
     },
     
+    validate: function(attrs) {
+        if (attrs.viewport_width < 0 || attrs.viewport_width > 2000) return "Viewport must have a reasonable width";
+    },
+    
+    loadStoredInfo: function() {
+        var chart_id = this.get("id");
+        if (!chart_id) return;
+        
+        // Check for viewport width
+        var prevWidth = localStorage.getItem('blandChart.'+chart_id+'.viewport_width');
+        if (prevWidth) this.set('viewport_width', prevWidth);
+    },
+    
+    storeValue: function(key, value) {
+        var chart_id = this.get("id");
+        if (!chart_id) return;
+        localStorage.setItem( 'blandChart.'+chart_id+'.'+key, value );
+    },
     
     validate: function(attrs) {
         if (attrs.viewport_width < 0) return "viewport width must be 0 or more.";
@@ -1204,7 +1229,6 @@ require.define("/lib/views/Resizer.js",function(require,module,exports,__dirname
     },
     
     grabResizer: function(evt) {
-        console.log("grab");
         evt.preventDefault();
         evt.originalEvent.preventDefault();
         
@@ -1216,8 +1240,9 @@ require.define("/lib/views/Resizer.js",function(require,module,exports,__dirname
             evt.preventDefault();
             evt.originalEvent.preventDefault();
             var delta = evt.clientX - initialX;
-            var newWidth = initialWidth + delta;
+            var newWidth = initialWidth*1 + delta*1;
             self.model.set({"viewport_width":newWidth});
+            self.model.storeValue('viewport_width', newWidth);
         }
         
         function release(evt) {
