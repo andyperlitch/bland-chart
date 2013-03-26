@@ -1,0 +1,15 @@
+<div class="chart-yaxis" style="color:{{color}}">
+    <h3 class="yaxis-label">{{label}}</h3>
+    <ul class="{{key}}-yaxis">
+    
+        {{#each markers}}
+        
+            <li class="chart-yaxis-marker {{this.mark_class}}" style="top: {{this.top}}; bottom:{{this.bottom}};">
+                <span class="label">{{this.label}}</span>
+                <span class="mark" style="background-color:{{color}}"></span>
+            </li>
+    
+        {{/each}}
+    
+    </ul>
+</div>
