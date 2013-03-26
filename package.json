@@ -4,6 +4,6 @@
     "dependencies": {
         "browserify":"",
         "knights-templar":"",
-        "knights-templar-br":""
+        "ktbr":""
     }
 }
