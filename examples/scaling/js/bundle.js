@@ -1,403 +1,54 @@
-(function(){var require = function (file, cwd) {
-    var resolved = require.resolve(file, cwd || '/');
-    var mod = require.modules[resolved];
-    if (!mod) throw new Error(
-        'Failed to resolve module ' + file + ', tried ' + resolved
-    );
-    var cached = require.cache[resolved];
-    var res = cached? cached.exports : mod();
-    return res;
-};
-
-require.paths = [];
-require.modules = {};
-require.cache = {};
-require.extensions = [".js",".coffee",".json"];
-
-require._core = {
-    'assert': true,
-    'events': true,
-    'fs': true,
-    'path': true,
-    'vm': true
-};
-
-require.resolve = (function () {
-    return function (x, cwd) {
-        if (!cwd) cwd = '/';
-        
-        if (require._core[x]) return x;
-        var path = require.modules.path();
-        cwd = path.resolve('/', cwd);
-        var y = cwd || '/';
-        
-        if (x.match(/^(?:\.\.?\/|\/)/)) {
-            var m = loadAsFileSync(path.resolve(y, x))
-                || loadAsDirectorySync(path.resolve(y, x));
-            if (m) return m;
-        }
-        
-        var n = loadNodeModulesSync(x, y);
-        if (n) return n;
-        
-        throw new Error("Cannot find module '" + x + "'");
-        
-        function loadAsFileSync (x) {
-            x = path.normalize(x);
-            if (require.modules[x]) {
-                return x;
-            }
-            
-            for (var i = 0; i < require.extensions.length; i++) {
-                var ext = require.extensions[i];
-                if (require.modules[x + ext]) return x + ext;
-            }
-        }
-        
-        function loadAsDirectorySync (x) {
-            x = x.replace(/\/+$/, '');
-            var pkgfile = path.normalize(x + '/package.json');
-            if (require.modules[pkgfile]) {
-                var pkg = require.modules[pkgfile]();
-                var b = pkg.browserify;
-                if (typeof b === 'object' && b.main) {
-                    var m = loadAsFileSync(path.resolve(x, b.main));
-                    if (m) return m;
-                }
-                else if (typeof b === 'string') {
-                    var m = loadAsFileSync(path.resolve(x, b));
-                    if (m) return m;
-                }
-                else if (pkg.main) {
-                    var m = loadAsFileSync(path.resolve(x, pkg.main));
-                    if (m) return m;
-                }
-            }
-            
-            return loadAsFileSync(x + '/index');
-        }
-        
-        function loadNodeModulesSync (x, start) {
-            var dirs = nodeModulesPathsSync(start);
-            for (var i = 0; i < dirs.length; i++) {
-                var dir = dirs[i];
-                var m = loadAsFileSync(dir + '/' + x);
-                if (m) return m;
-                var n = loadAsDirectorySync(dir + '/' + x);
-                if (n) return n;
-            }
-            
-            var m = loadAsFileSync(x);
-            if (m) return m;
-        }
-        
-        function nodeModulesPathsSync (start) {
-            var parts;
-            if (start === '/') parts = [ '' ];
-            else parts = path.normalize(start).split('/');
-            
-            var dirs = [];
-            for (var i = parts.length - 1; i >= 0; i--) {
-                if (parts[i] === 'node_modules') continue;
-                var dir = parts.slice(0, i + 1).join('/') + '/node_modules';
-                dirs.push(dir);
-            }
-            
-            return dirs;
-        }
-    };
-})();
-
-require.alias = function (from, to) {
-    var path = require.modules.path();
-    var res = null;
-    try {
-        res = require.resolve(from + '/package.json', '/');
-    }
-    catch (err) {
-        res = require.resolve(from, '/');
-    }
-    var basedir = path.dirname(res);
+;(function(e,t,n){function r(n,i){if(!t[n]){if(!e[n]){var s=typeof require=="function"&&require;if(!i&&s)return s(n,!0);throw new Error("Cannot find module '"+n+"'")}var o=t[n]={exports:{}};e[n][0](function(t){var i=e[n][1][t];return r(i?i:t)},o,o.exports)}return t[n].exports}for(var i=0;i<n.length;i++)r(n[i]);return r})({1:[function(require,module,exports){
+// Set up the chart and datasource
+var Chart = require('../../');
+var chart = window.chart = new Chart({
     
-    var keys = (Object.keys || function (obj) {
-        var res = [];
-        for (var key in obj) res.push(key);
-        return res;
-    })(require.modules);
+    max_data: 20,
+    viewport_width: 1000,
+    viewport_height: 400,
+    overview_height: 100,
+    id: "akjdsfhalkjdldfkjasdlfkjasd"
     
-    for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        if (key.slice(0, basedir.length + 1) === basedir + '/') {
-            var f = key.slice(basedir.length);
-            require.modules[to + f] = require.modules[basedir + f];
-        }
-        else if (key === basedir) {
-            require.modules[to] = require.modules[basedir];
-        }
-    }
-};
+});
+var datasource = _.extend({}, Backbone.Events);
 
-(function () {
-    var process = {};
-    var global = typeof window !== 'undefined' ? window : {};
-    var definedProcess = false;
+// Set the source
+chart.setSource(datasource);
+
+$(function() {
     
-    require.define = function (filename, fn) {
-        if (!definedProcess && require.modules.__browserify_process) {
-            process = require.modules.__browserify_process();
-            definedProcess = true;
-        }
+    // Set the element
+    chart.to(document.getElementById("target"));
+    chart.setX("time", function(value){
+        return (new Date(value)).toLocaleTimeString(); 
+    });
+    chart.plot("point1","#0000CC","auto","auto", "Point 1");
+    chart.plot("point2","#00CC00","auto","auto", "Point 2");
+    
+    function genRandomData() {
+        var time = +new Date();
+        var point1 = 5000 - Math.round(Math.random() * 5000);
+        var point2 = Math.round(Math.random() * 100);
+        return { time: time, point1: point1, point2: point2 }
+    }
+    
+    // Trigger events
+    var intval = setInterval(function(){
         
-        var dirname = require._core[filename]
-            ? ''
-            : require.modules.path().dirname(filename)
-        ;
+        var data = genRandomData();
+        datasource.trigger("data", data);
         
-        var require_ = function (file) {
-            var requiredModule = require(file, dirname);
-            var cached = require.cache[require.resolve(file, dirname)];
-
-            if (cached && cached.parent === null) {
-                cached.parent = module_;
-            }
-
-            return requiredModule;
-        };
-        require_.resolve = function (name) {
-            return require.resolve(name, dirname);
-        };
-        require_.modules = require.modules;
-        require_.define = require.define;
-        require_.cache = require.cache;
-        var module_ = {
-            id : filename,
-            filename: filename,
-            exports : {},
-            loaded : false,
-            parent: null
-        };
-        
-        require.modules[filename] = function () {
-            require.cache[filename] = module_;
-            fn.call(
-                module_.exports,
-                require_,
-                module_,
-                module_.exports,
-                dirname,
-                filename,
-                process,
-                global
-            );
-            module_.loaded = true;
-            return module_.exports;
-        };
-    };
-})();
-
-
-require.define("path",function(require,module,exports,__dirname,__filename,process,global){function filter (xs, fn) {
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (fn(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length; i >= 0; i--) {
-    var last = parts[i];
-    if (last == '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
-}
-
-// Regex to split a filename into [*, dir, basename, ext]
-// posix version
-var splitPathRe = /^(.+\/(?!$)|\/)?((?:.+?)?(\.[^.]*)?)$/;
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-var resolvedPath = '',
-    resolvedAbsolute = false;
-
-for (var i = arguments.length; i >= -1 && !resolvedAbsolute; i--) {
-  var path = (i >= 0)
-      ? arguments[i]
-      : process.cwd();
-
-  // Skip empty and invalid entries
-  if (typeof path !== 'string' || !path) {
-    continue;
-  }
-
-  resolvedPath = path + '/' + resolvedPath;
-  resolvedAbsolute = path.charAt(0) === '/';
-}
-
-// At this point the path should be resolved to a full absolute path, but
-// handle relative paths to be safe (might happen when process.cwd() fails)
-
-// Normalize the path
-resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-var isAbsolute = path.charAt(0) === '/',
-    trailingSlash = path.slice(-1) === '/';
-
-// Normalize the path
-path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-  
-  return (isAbsolute ? '/' : '') + path;
-};
-
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    return p && typeof p === 'string';
-  }).join('/'));
-};
-
-
-exports.dirname = function(path) {
-  var dir = splitPathRe.exec(path)[1] || '';
-  var isWindows = false;
-  if (!dir) {
-    // No dirname
-    return '.';
-  } else if (dir.length === 1 ||
-      (isWindows && dir.length <= 3 && dir.charAt(1) === ':')) {
-    // It is just a slash or a drive letter with a slash
-    return dir;
-  } else {
-    // It is a full dirname, strip trailing slash
-    return dir.substring(0, dir.length - 1);
-  }
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPathRe.exec(path)[2] || '';
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPathRe.exec(path)[3] || '';
-};
-
-});
-
-require.define("__browserify_process",function(require,module,exports,__dirname,__filename,process,global){var process = module.exports = {};
-
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-        && window.setImmediate;
-    var canPost = typeof window !== 'undefined'
-        && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
-    }
-
-    if (canPost) {
-        var queue = [];
-        window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'browserify-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('browserify-tick', '*');
-        };
-    }
-
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
-
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-
-process.binding = function (name) {
-    if (name === 'evals') return (require)('vm')
-    else throw new Error('No such module. (Possibly not yet loaded)')
-};
-
-(function () {
-    var cwd = '/';
-    var path;
-    process.cwd = function () { return cwd };
-    process.chdir = function (dir) {
-        if (!path) path = require('path');
-        cwd = path.resolve(dir, cwd);
-    };
-})();
-
-});
-
-require.define("/package.json",function(require,module,exports,__dirname,__filename,process,global){module.exports = {}
-});
-
-require.define("/index.js",function(require,module,exports,__dirname,__filename,process,global){exports = module.exports = require("./lib/models/BlandChart")
-});
-
-require.define("/lib/models/BlandChart.js",function(require,module,exports,__dirname,__filename,process,global){var BlandChartView = require("../views/BlandChartView");
+    }, 1500);
+    
+    // setTimeout(function(){
+    //     clearInterval(intval);
+    // },1000)
+    
+})
+},{"../../":2}],2:[function(require,module,exports){
+exports = module.exports = require("./lib/models/BlandChart")
+},{"./lib/models/BlandChart":3}],3:[function(require,module,exports){
+(function(){var BlandChartView = require("../views/BlandChartView");
 var Data = require("../collections/Data");
 var Plots = require("../collections/Plots");
 var BlandChart = Backbone.Model.extend({
@@ -689,43 +340,340 @@ var BlandChart = Backbone.Model.extend({
 });
 
 exports = module.exports = BlandChart
+})()
+},{"../views/BlandChartView":4,"../collections/Data":5,"../collections/Plots":6}],7:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+    && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+    && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            if (ev.source === window && ev.data === 'process-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('process-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+}
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+
+},{}],8:[function(require,module,exports){
+(function(process){function filter (xs, fn) {
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (fn(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length; i >= 0; i--) {
+    var last = parts[i];
+    if (last == '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Regex to split a filename into [*, dir, basename, ext]
+// posix version
+var splitPathRe = /^(.+\/(?!$)|\/)?((?:.+?)?(\.[^.]*)?)$/;
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+var resolvedPath = '',
+    resolvedAbsolute = false;
+
+for (var i = arguments.length; i >= -1 && !resolvedAbsolute; i--) {
+  var path = (i >= 0)
+      ? arguments[i]
+      : process.cwd();
+
+  // Skip empty and invalid entries
+  if (typeof path !== 'string' || !path) {
+    continue;
+  }
+
+  resolvedPath = path + '/' + resolvedPath;
+  resolvedAbsolute = path.charAt(0) === '/';
+}
+
+// At this point the path should be resolved to a full absolute path, but
+// handle relative paths to be safe (might happen when process.cwd() fails)
+
+// Normalize the path
+resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+var isAbsolute = path.charAt(0) === '/',
+    trailingSlash = path.slice(-1) === '/';
+
+// Normalize the path
+path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+  
+  return (isAbsolute ? '/' : '') + path;
+};
+
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    return p && typeof p === 'string';
+  }).join('/'));
+};
+
+
+exports.dirname = function(path) {
+  var dir = splitPathRe.exec(path)[1] || '';
+  var isWindows = false;
+  if (!dir) {
+    // No dirname
+    return '.';
+  } else if (dir.length === 1 ||
+      (isWindows && dir.length <= 3 && dir.charAt(1) === ':')) {
+    // It is just a slash or a drive letter with a slash
+    return dir;
+  } else {
+    // It is a full dirname, strip trailing slash
+    return dir.substring(0, dir.length - 1);
+  }
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPathRe.exec(path)[2] || '';
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPathRe.exec(path)[3] || '';
+};
+
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+})(require("__browserify_process"))
+},{"__browserify_process":7}],5:[function(require,module,exports){
+var DataPoint = require("../models/DataPoint");
+var ChartData = Backbone.Collection.extend({
+    
+    model: DataPoint,
+    
+    initialize: function(models, options) {
+        
+    },
+    
+    getYExtrema: function(key) {
+        var extrema = {}
+        this.each(function(model) {
+            var value = model.get(key);
+            extrema.min = extrema.min === undefined ? value : Math.min(extrema.min, value) ;
+            extrema.max = extrema.max === undefined ? value : Math.max(extrema.max, value) ;
+        });
+        if (extrema.min === undefined) {
+            extrema.min = 0;
+            extrema.max = 0;
+        }
+        return extrema;
+    }
+    
+    
 });
 
-require.define("/lib/views/BlandChartView.js",function(require,module,exports,__dirname,__filename,process,global){var BaseView = require('./BaseView');
+exports = module.exports = ChartData
+},{"../models/DataPoint":9}],6:[function(require,module,exports){
+var Plot = require('../models/Plot');
+var Plots = Backbone.Collection.extend({
+    
+    model: Plot,
+    
+    initialize: function(models, options) {
+        
+        this.chart = options.chart;
+        this.on("add",function(model){
+            model.chart = this.chart;
+            model.listenToDataChange(model.chart.data);
+            model.setUp();
+        });
+        this.on("change",function(model){
+            model.setUp();
+        })
+        
+    }
+    
+});
+exports = module.exports = Plots
+},{"../models/Plot":10}],4:[function(require,module,exports){
+var path = require('path');
+var BaseView = require('./BaseView');
 var Overview = require('./Overview');
 var Viewport = require('./Viewport');
 var Yaxes = require('./Yaxes');
 var Xaxis = require('./Xaxis');
 var Resizer = require('./Resizer');
 
+
 var BlandChartView = BaseView.extend({
 
-    // Re-render the entire chart when plots are added or removed,
-    // and when the key to the x values has changed.
     initialize: function() {
+        
+        // Initialize all subviews
+        this.overview = new Overview({ model: this.model, collection: this.model.data });
+        this.viewport = new Viewport({ model: this.model, collection: this.model.data });
+        this.yaxes = new Yaxes({ model: this.model, collection: this.model.data });
+        this.xaxis = new Xaxis({ model: this.model, collection: this.model.data });
+        this.resizer = new Resizer({ model: this.model });
+        
+        // Re-render the entire chart when plots are added or removed,
+        // and when the key to the x values has changed.
         this.listenTo(this.model.plots, "add remove", this.render );
         this.listenTo(this.model, "change:x_axis_key change:viewport_width", this.render);
     },
     
-    template: _.template('<div class="chart-yaxes"></div><div class="chart-overviewport"><div class="chart-resizer"><div class="resizer-grip"></div><div class="resizer-grip"></div><div class="resizer-grip"></div></div><div class="chart-viewport"></div><div class="chart-xaxis"></div><div class="chart-overview"></div></div>'),
+    template: Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  this.compilerInfo = [2,'>= 1.0.0-rc.3'];
+helpers = helpers || Handlebars.helpers; data = data || {};
+  
+
+
+  return "<div class=\"chart-yaxes\"></div>\n\n<div class=\"chart-overviewport\">\n\n    <div class=\"chart-resizer\">\n        <div class=\"resizer-grip\"></div>\n        <div class=\"resizer-grip\"></div>\n        <div class=\"resizer-grip\"></div>\n    </div>\n    \n    <div class=\"chart-viewport\"></div>\n    <div class=\"chart-xaxis\"></div>\n    <div class=\"chart-overview\"></div>\n    \n</div>";
+  }),
     
     render: function() {
+        
         if (this.model.get('no_render')) return;
-        // Destroy all views
-        this.clearViews();
         
         // Set the base html
         this.$el.html(this.template({})).css({ height: (this.model.get("overview_height") + this.model.get("viewport_height"))+"px"})
         
         // Create all necessary views (with elements)
-        if (this.model.get("overview")) this.setView("overview", new Overview({ model: this.model, collection: this.model.data, el: this.$(".chart-overview")[0] }) );
-        this.setView("viewport", new Viewport({ model: this.model, collection: this.model.data, el: this.$(".chart-viewport")[0] }) );
-        this.setView("yaxes", new Yaxes({ model: this.model, collection: this.model.data, el: this.$(".chart-yaxes")[0] }) );
-        this.setView("xaxis", new Xaxis({ model: this.model, collection: this.model.data, el: this.$(".chart-xaxis")[0] }) );
-        this.setView("resizer", new Resizer({ model: this.model , el: this.$(".chart-resizer")[0] }) );
-        
-        // Render views
-        this.renderSubs();
+        if (this.model.get("overview")) this.assign('.chart-overview', this.overview);
+        this.assign({
+            '.chart-viewport': this.viewport,
+            '.chart-yaxes': this.yaxes,
+            '.chart-yaxes': this.yaxes,
+            '.chart-resizer': this.resizer
+        });
         
         // Allow chaining
         return this;
@@ -734,139 +682,364 @@ var BlandChartView = BaseView.extend({
 });
 
 exports = module.exports = BlandChartView
+},{"path":8,"./Overview":11,"./BaseView":12,"./Viewport":13,"./Yaxes":14,"./Xaxis":15,"./Resizer":16}],9:[function(require,module,exports){
+var DataPoint = Backbone.Model.extend({
+
+    idAttribute: "__id" // To ensure that data points with the same "id" field do not override each other
+    
 });
 
-require.define("/lib/views/BaseView.js",function(require,module,exports,__dirname,__filename,process,global){var BaseView = Backbone.View.extend({
+exports = module.exports = DataPoint
+},{}],12:[function(require,module,exports){
+var BaseView = Backbone.View.extend({
     
-    // Sets a view to the views hash
-    setView: function(key, view) {
-        
-        if (!(view instanceof Backbone.View)) throw new Error ("setView must be passed a Backbone View");
-        
-        this.views = this.views || {};
-        
-        // Destroy any previous view
-        if ( this.views[key] instanceof Backbone.View ) this.destroyView(key);
-        
-        this.views[key] = view;
-        
-    },
-    
-    insertView: function(key, view, selector) {
-        
-        this.views = this.views || {};
-        
-        // Check if view is also a new one
-        if ( view ) this.setView(key, view);
-        
-        if ( ! this.views.hasOwnProperty(key) ) return;
-        
-        // Add to a provided element or simply append to this.$el
-        if ( selector ) this.$(selector).html( this.views[key].render().el );
-        else this.$el.append( this.views[key].render().el );
-        
-    },
-    
-    renderSubs: function() {
-        for(var k in this.views) {
-            this.views[k].render();
+    // Assigns a subview to a jquery selector in this view's el
+    assign : function (selector, view) {
+        var selectors;
+        if (_.isObject(selector)) {
+            selectors = selector;
         }
-    },
-    
-    // Complete destroy a view
-    destroyView: function(key) {
-        
-        if ( !this.views.hasOwnProperty(key) ) return;
-        var view = this.views[key];
-        view.undelegateEvents();
-        view.$el.removeData().unbind(); 
-        view.remove();  
-        Backbone.View.prototype.remove.call(view);
-        delete this.views[key];
-        
-    },
-    
-    clearViews: function() {
-        for (var k in this.views) {
-            this.destroyView(k);
+        else {
+            selectors = {};
+            selectors[selector] = view;
         }
+        if (!selectors) return;
+        _.each(selectors, function (view, selector) {
+            view.setElement(this.$(selector)).render();
+        }, this);
     }
     
 });
 
 exports = module.exports = BaseView
-});
-
-require.define("/lib/views/Overview.js",function(require,module,exports,__dirname,__filename,process,global){var BaseView = require('./BaseView');
-var Slider = require('./Slider');
-
-var Overview = BaseView.extend({
-
-    template: _.template('<div class="overview-slider"></div><div class="overview-canvas"></div>'),
-
+},{}],15:[function(require,module,exports){
+var Xaxis = Backbone.View.extend({
+    
     initialize: function() {
-        
-        
-        
+        this.listenTo(this.model.data, "add", this.render );
     },
     
     render: function() {
+        
+        if (this.model.get('no_render')) return;
+        
+        this.$el.empty();
+        
+        // Get the extrema for the x axis
+        var extrema = this.model.getViewportXExtrema();
+        if (extrema === false) {
+            // TODO: render in a way to show that we are waiting for data.
+            return;
+        }
+        
+        // Create the axis
+        var $axis = $('<ul></ul>');
+        
+        // Get the range
+        var range = extrema.max - extrema.min;
+        
+        // Get number of markers to show
+        var max_markers = Math.floor( this.model.get("viewport_width") / this.model.get("min_spacing_x"));
+        var pixel_increments = this.model.get("viewport_width") / max_markers;
+        var value_increments = range / max_markers;
+
+        // Create labels for the axis
+        for ( var i = 0; i <= max_markers; i++ ) {
+            var value = Math.round(extrema.min + i*value_increments);
+            var formatter = this.model.get('x_axis_formatter');
+            var display_value = ("function" === typeof formatter) ? formatter(value) : value ;
+            
+            var $marker = $('<li class="mark">'+display_value+'</li>')
+            
+            if (i === max_markers) {
+                $marker.css("right", "0px").addClass('right')
+            } else {
+                if (i === 0) {
+                    $marker.addClass('bottom');
+                }
+                var newLeft = i * pixel_increments;
+                $marker.css('left', newLeft+"px");
+            }
+            $marker.appendTo($axis)
+        }
+        
+        // Set height and append to the element
+        $axis.appendTo(this.$el);
+    }
+    
+});
+exports = module.exports = Xaxis
+},{}],16:[function(require,module,exports){
+var Resizer = Backbone.View.extend({
+    
+    events: {
+        "mousedown": "grabResizer"
+    },
+    
+    render: function() {
+        return this;
+    },
+    
+    grabResizer: function(evt) {
+        evt.preventDefault();
+        evt.originalEvent.preventDefault();
         
         var self = this;
+        var initialX = evt.clientX;
+        var initialWidth = this.model.get("viewport_width");
         
-        // Get dimensions
-        var height = this.model.get("overview_height");
-        var width = this.model.get("viewport_width");
-        
-        // Fill markup
-        this.$el.html(this.template({}));
-
-        // Create svg canvas, removing any previous canvas
-        if ( this.canvas && typeof this.canvas.remove === "function" ) {
-            this.canvas.remove();
-            delete this.canvas;
+        function resize(evt) {
+            evt.preventDefault();
+            evt.originalEvent.preventDefault();
+            var delta = evt.clientX - initialX;
+            var newWidth = initialWidth*1 + delta*1;
+            self.model.set({"viewport_width":newWidth});
+            self.model.storeValue('viewport_width', newWidth);
         }
-        this.canvas = Raphael(
-            this.$(".overview-canvas").css({width: width+"px", height: height+"px"})[0], 
-            width, 
-            height,
-            function() {
-                self.insertView("slider")
-            }
-        );
         
-        // Create the scrolling element
-        this.setView("slider", new Slider({ model: this.model, el: this.$(".overview-slider")[0] }) );
+        function release(evt) {
+            $(window).off("mousemove", resize);
+        }
         
-        // clear canvas and make sure width and height are updated
-        this.$el.css({"width":width+"px", "height":height+"px"});
-        
-        return this;
+        $(window).one("mouseup", release);
+        $(window).on("mousemove", resize);
     }
     
 });
 
-exports = module.exports = Overview
-});
+exports = module.exports = Resizer
+},{}],10:[function(require,module,exports){
+var Markers = require('../collections/Markers');
+// A Plot is an object that represents a logical grouping of data, i.e.
+// data from the same key on incoming json objects. It is used to set the 
+// y-axis scale, and convert data values to pixel y-values on the canvas.
+var Plot = Backbone.Model.extend({
+    
+    
+    defaults: {
 
-require.define("/lib/views/Slider.js",function(require,module,exports,__dirname,__filename,process,global){var Slider = Backbone.View.extend({
-
-    initialize: function() {
+        // Bounds of the Y axis. A string of "auto" means that the 
+        // Y axis for this plot should scale with the data
+        lowerY: "auto",
+        upperY: "auto",
+        
+        // Maximum number of points to render in 100px space before 
+        // data starts being omitted from rendering.
+        max_detail: 5,
+        
+        // Color of the line/bar/etc that will be drawn.
+        color: "#000000",
+        
+        // The label for the plot (will be displayed
+        // on the y-axis and on pointinfo boxes)
+        label: ""
         
     },
     
-    template: _.template('<div class="slider-lefthandle"></div><div class="slider-righthandle"></div>'),
+    idAttribute: "key",
+    
+    initialize: function() {
+        this.actualLower = this.get("lowerY");
+        this.actualUpper = this.get("upperY");
+    },
+    
+    listenToDataChange: function(data) {
+        var self = this;
+        this.listenTo(data, "add", function() {
+            if (self.get('lowerY') === "auto" || self.get('upperY') === "auto") self.setUp();
+            else self.trigger("update");
+        });
+    },
+    
+    setUp: function() {
+        
+        // Stores the markers for the y-axis of this plot. 
+        this.markers = new Markers([], {
+            plot: this
+        })
+        
+        // The markers are generated based on the size of the viewport and the upper
+        // and lower bounds of plot y-axis. This will need to be dynamically computed
+        // if the values of lowerY and upperY are set to "auto" and not static numbers.
+        var lower = this.get('lowerY');
+        var upper = this.get('upperY');
+        // Object that holds the minimum and maximum values from the dataset
+        var extrema;
+        var ten_percent;
+        if ( lower === "auto" ) {
+            extrema = this.chart.data.getYExtrema(this.get("key"));
+            // debugger; 
+            // 10% on either side of the extremas
+            ten_percent = (extrema.max - extrema.min)*0.1;
+            if (ten_percent === 0) {
+                if (extrema.max !== 0) ten_percent = Math.abs(extrema.max) * 0.1;
+                else ten_percent = 1;
+            }
+            lower = extrema.min - ten_percent;
+        }
+        if ( upper === "auto" ) {
+            extrema = extrema || this.chart.data.getYExtrema(this.get("key"));
+            ten_percent = ten_percent || (extrema.max - extrema.min)*0.1 ;
+            upper = extrema.max + ten_percent;
+        }
+        
+        // Set the actual bounds
+        this.actualLower = lower;
+        this.actualUpper = upper;
+        
+        // Get the range
+        var range = upper - lower;
+        // Get number of markers to show
+        var max_markers = Math.floor( this.chart.get("viewport_height") / this.chart.get("min_spacing_y"));
+        var pixel_increments = this.chart.get("viewport_height") / max_markers;
+        var value_increments = range / max_markers;
+        // Create labels for the axis
+        for ( var i = 0; i <= max_markers; i++ ) {
+            // Create marker object
+            var marker = { 
+                top: "auto",
+                bottom: i < max_markers ? (i * pixel_increments)+"px" : "auto", 
+                label: this.createAxisLabel(i,value_increments, lower, range),
+                mark_class: ""
+            }
+            if (i === max_markers) {
+                marker.top = "0";
+                marker.mark_class = "top";
+            } else if (i === 0) {
+                marker.mark_class = "bottom";
+            }
+            this.markers.add(marker, {merge: true});
+        }
+        this.trigger("update");
+    },
+    
+    createAxisLabel: function(i, increment, lower, range) {
+        
+        // TODO: smarter algorithm for rounding labels to their significant digits
+        var next = i*increment+lower;
+        
+        if (increment < 1) return Math.round(next*10)/10;
+        else if (increment > 1000000000) return (Math.round(next/10000000)/100)+"B";
+        else if (increment > 1000000) return (Math.round(next/10000)/100)+"M";
+        else if (increment > 100) return (Math.round(next/100)/10)+"K";
+        return Math.round(i*increment);
+    },
+    
+    toViewportY: function(y) {
+        // point = { x: [X], y: [Y] }
+        // debugger;
+        var real_yrange = this.actualUpper - this.actualLower;
+        var pixel_yrange = this.chart.get("viewport_height");
+        var y_ratio = pixel_yrange / real_yrange;
+        var y_pixels = (y-this.actualLower) * y_ratio ;
+        // flip to adjust for downward-facing y axis
+        var y1 = pixel_yrange - y_pixels ;
+        return y1;
+    },
+    
+    serialize: function() {
+        var retval = this.toJSON();
+        retval.markers = this.markers.toJSON();
+        return retval;
+    }
+});
+
+exports = module.exports = Plot
+},{"../collections/Markers":17}],14:[function(require,module,exports){
+
+var Yaxes = Backbone.View.extend({
+    
+    initialize: function() {
+        this.listenTo(this.model.plots, "change update", this.render);
+    },
     
     render: function() {
-        return this;
+        
+        if (this.model.get('no_render')) return;
+        
+        this.$el.empty();
+        this.model.plots.each(this.renderAxis, this);
+        
+        // Set height and margin-bottom
+        this.$el.css( { 
+            height: this.model.get("viewport_height")+"px",
+            marginBottom: this.model.get("overview_height")+"px" 
+        });
+        
+    },
+    
+    axis_template: Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  this.compilerInfo = [2,'>= 1.0.0-rc.3'];
+helpers = helpers || Handlebars.helpers; data = data || {};
+  var buffer = "", stack1, functionType="function", escapeExpression=this.escapeExpression, self=this;
+
+function program1(depth0,data) {
+  
+  var buffer = "", stack1, stack2;
+  buffer += "\n        \n            <li class=\"chart-yaxis-marker "
+    + escapeExpression(((stack1 = depth0.mark_class),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + "\" style=\"top: "
+    + escapeExpression(((stack1 = depth0.top),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + "; bottom:"
+    + escapeExpression(((stack1 = depth0.bottom),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + ";\">\n                <span class=\"label\">"
+    + escapeExpression(((stack1 = depth0.label),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + "</span>\n                <span class=\"mark\" style=\"background-color:";
+  if (stack2 = helpers.color) { stack2 = stack2.call(depth0, {hash:{},data:data}); }
+  else { stack2 = depth0.color; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  buffer += escapeExpression(stack2)
+    + "\"></span>\n            </li>\n    \n        ";
+  return buffer;
+  }
+
+  buffer += "<div class=\"chart-yaxis\" style=\"color:";
+  if (stack1 = helpers.color) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
+  else { stack1 = depth0.color; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  buffer += escapeExpression(stack1)
+    + "\">\n    <h3 class=\"yaxis-label\">";
+  if (stack1 = helpers.label) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
+  else { stack1 = depth0.label; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  buffer += escapeExpression(stack1)
+    + "</h3>\n    <ul class=\"";
+  if (stack1 = helpers.key) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
+  else { stack1 = depth0.key; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  buffer += escapeExpression(stack1)
+    + "-yaxis\">\n    \n        ";
+  stack1 = helpers.each.call(depth0, depth0.markers, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data});
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n    \n    </ul>\n</div>";
+  return buffer;
+  }),
+    
+    renderAxis: function(plot) {
+        
+        // Get height of y axis
+        var axis_height = this.model.get("viewport_height");
+        
+        // Create axis element
+        var markup = this.axis_template(plot.serialize());
+        markup = markup.trim();
+        var $axis = $(markup).appendTo(this.$el);
+        
+        // Determine the width the ul should be
+        var axis_width = 0;
+        $(".chart-yaxis-marker",$axis).each(function(i, el){
+            var $marker = $(el);
+            axis_width = Math.max( axis_width , $marker.width() );
+        });
+        $axis.find("ul").css("width", axis_width+"px");
+        
+        // get width of sideways text to size the axis container
+        var $label = $(".yaxis-label", $axis);
+        var label_width = $label.width()
+        $label.css({'right':(axis_width + 10 - label_width/2 + 13)+"px"});
     }
     
 });
 
-exports = module.exports = Slider
-});
-
-require.define("/lib/views/Viewport.js",function(require,module,exports,__dirname,__filename,process,global){var util = require('../util');
+exports = module.exports = Yaxes
+},{}],13:[function(require,module,exports){
+var util = require('../util');
 var PathPoint = require('./PathPoint');
 // The focused viewing area of the chart: 
 //    +------------------------------+
@@ -1069,15 +1242,72 @@ var Viewport = Backbone.View.extend({
 });
 
 exports = module.exports = Viewport
+},{"../util":18,"./PathPoint":19}],11:[function(require,module,exports){
+var BaseView = require('./BaseView');
+
+var Slider = require('./Slider');
+
+var Overview = BaseView.extend({
+
+    template: Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  this.compilerInfo = [2,'>= 1.0.0-rc.3'];
+helpers = helpers || Handlebars.helpers; data = data || {};
+  
+
+
+  return "<div class=\"overview-slider\"></div>\n<div class=\"overview-canvas\"></div>";
+  }),
+
+    initialize: function() {
+        
+        
+        
+    },
+    
+    render: function() {
+        
+        var self = this;
+        
+        // Get dimensions
+        var height = this.model.get("overview_height");
+        var width = this.model.get("viewport_width");
+        
+        // Fill markup
+        this.$el.html(this.template({}));
+
+        // Create svg canvas, removing any previous canvas
+        if ( this.canvas && typeof this.canvas.remove === "function" ) {
+            this.canvas.remove();
+            delete this.canvas;
+        }
+        this.canvas = Raphael(
+            this.$(".overview-canvas").css({width: width+"px", height: height+"px"})[0], 
+            width, 
+            height,
+            function() {
+                self.insertView("slider")
+            }
+        );
+        
+        // Create the scrolling element
+        this.setView("slider", new Slider({ model: this.model, el: this.$(".overview-slider")[0] }) );
+        
+        // clear canvas and make sure width and height are updated
+        this.$el.css({"width":width+"px", "height":height+"px"});
+        
+        return this;
+    }
+    
 });
 
-require.define("/lib/util.js",function(require,module,exports,__dirname,__filename,process,global){exports.addClass = function(element, classname) {
+exports = module.exports = Overview
+},{"./BaseView":12,"./Slider":20}],18:[function(require,module,exports){
+exports.addClass = function(element, classname) {
     element.node.className ? element.node.className.baseVal = classname : element.node.setAttribute('class',  classname);
     return element;
 }
-});
-
-require.define("/lib/views/PathPoint.js",function(require,module,exports,__dirname,__filename,process,global){// Wrapper for a Raphael circle elements
+},{}],19:[function(require,module,exports){
+// Wrapper for a Raphael circle elements
 var PathPoint = Backbone.View.extend({
     
     initialize: function(options) {
@@ -1107,355 +1337,8 @@ var PathPoint = Backbone.View.extend({
     
 });
 exports = module.exports = PathPoint
-});
-
-require.define("/lib/views/Yaxes.js",function(require,module,exports,__dirname,__filename,process,global){var Yaxes = Backbone.View.extend({
-    
-    initialize: function() {
-        this.listenTo(this.model.plots, "change update", this.render);
-    },
-    
-    render: function() {
-        
-        if (this.model.get('no_render')) return;
-        
-        this.$el.empty();
-        this.model.plots.each(this.renderAxis, this);
-        
-        // Set height and margin-bottom
-        this.$el.css( { 
-            height: this.model.get("viewport_height")+"px",
-            marginBottom: this.model.get("overview_height")+"px" 
-        });
-        
-    },
-    
-    // axis_template: _.template('<ul class="chart-yaxis <%= key %>"></ul>'),
-    axis_template: _.template($("#blandchart-tpl-yaxis").html()),
-    // marker_template: _.template('<li class="chart-yaxis-marker <%=mark_class%>" style="top: <%=top%>; bottom:<%=bottom%>; color:<%= color %>;"><span class="label"><%=label%></span> <span class="mark" style="background-color:<%= color %>"></span></li>'),
-    
-    renderAxis: function(plot) {
-        
-        // Get height of y axis
-        var axis_height = this.model.get("viewport_height");
-        
-        // Create axis element
-        var markup = this.axis_template(plot.serialize());
-        markup = markup.trim();
-        var $axis = $(markup).appendTo(this.$el);
-        
-        // Determine the width the ul should be
-        var axis_width = 0;
-        $(".chart-yaxis-marker",$axis).each(function(i, el){
-            var $marker = $(el);
-            axis_width = Math.max( axis_width , $marker.width() );
-        });
-        $axis.find("ul").css("width", axis_width+"px");
-        
-        // get width of sideways text to size the axis container
-    }
-    
-});
-
-exports = module.exports = Yaxes
-});
-
-require.define("/lib/views/Xaxis.js",function(require,module,exports,__dirname,__filename,process,global){var Xaxis = Backbone.View.extend({
-    
-    initialize: function() {
-        this.listenTo(this.model.data, "add", this.render );
-    },
-    
-    render: function() {
-        
-        if (this.model.get('no_render')) return;
-        
-        this.$el.empty();
-        
-        // Get the extrema for the x axis
-        var extrema = this.model.getViewportXExtrema();
-        if (extrema === false) {
-            // TODO: render in a way to show that we are waiting for data.
-            return;
-        }
-        
-        // Create the axis
-        var $axis = $('<ul></ul>');
-        
-        // Get the range
-        var range = extrema.max - extrema.min;
-        
-        // Get number of markers to show
-        var max_markers = Math.floor( this.model.get("viewport_width") / this.model.get("min_spacing_x"));
-        var pixel_increments = this.model.get("viewport_width") / max_markers;
-        var value_increments = range / max_markers;
-
-        // Create labels for the axis
-        for ( var i = 0; i <= max_markers; i++ ) {
-            var value = Math.round(extrema.min + i*value_increments);
-            var formatter = this.model.get('x_axis_formatter');
-            var display_value = ("function" === typeof formatter) ? formatter(value) : value ;
-            
-            var $marker = $('<li class="mark">'+display_value+'</li>')
-            
-            if (i === max_markers) {
-                $marker.css("right", "0px").addClass('right')
-            } else {
-                if (i === 0) {
-                    $marker.addClass('bottom');
-                }
-                var newLeft = i * pixel_increments;
-                $marker.css('left', newLeft+"px");
-            }
-            $marker.appendTo($axis)
-        }
-        
-        // Set height and append to the element
-        $axis.appendTo(this.$el);
-    }
-    
-});
-exports = module.exports = Xaxis
-});
-
-require.define("/lib/views/Resizer.js",function(require,module,exports,__dirname,__filename,process,global){var Resizer = Backbone.View.extend({
-    
-    events: {
-        "mousedown": "grabResizer"
-    },
-    
-    render: function() {
-        return this;
-    },
-    
-    grabResizer: function(evt) {
-        evt.preventDefault();
-        evt.originalEvent.preventDefault();
-        
-        var self = this;
-        var initialX = evt.clientX;
-        var initialWidth = this.model.get("viewport_width");
-        
-        function resize(evt) {
-            evt.preventDefault();
-            evt.originalEvent.preventDefault();
-            var delta = evt.clientX - initialX;
-            var newWidth = initialWidth*1 + delta*1;
-            self.model.set({"viewport_width":newWidth});
-            self.model.storeValue('viewport_width', newWidth);
-        }
-        
-        function release(evt) {
-            $(window).off("mousemove", resize);
-        }
-        
-        $(window).one("mouseup", release);
-        $(window).on("mousemove", resize);
-    }
-    
-});
-
-exports = module.exports = Resizer
-});
-
-require.define("/lib/collections/Data.js",function(require,module,exports,__dirname,__filename,process,global){var DataPoint = require("../models/DataPoint");
-var ChartData = Backbone.Collection.extend({
-    
-    model: DataPoint,
-    
-    initialize: function(models, options) {
-        
-    },
-    
-    getYExtrema: function(key) {
-        var extrema = {}
-        this.each(function(model) {
-            var value = model.get(key);
-            extrema.min = extrema.min === undefined ? value : Math.min(extrema.min, value) ;
-            extrema.max = extrema.max === undefined ? value : Math.max(extrema.max, value) ;
-        });
-        if (extrema.min === undefined) {
-            extrema.min = 0;
-            extrema.max = 0;
-        }
-        return extrema;
-    }
-    
-    
-});
-
-exports = module.exports = ChartData
-});
-
-require.define("/lib/models/DataPoint.js",function(require,module,exports,__dirname,__filename,process,global){var DataPoint = Backbone.Model.extend({
-    
-});
-
-exports = module.exports = DataPoint
-});
-
-require.define("/lib/collections/Plots.js",function(require,module,exports,__dirname,__filename,process,global){var Plot = require('../models/Plot');
-var Plots = Backbone.Collection.extend({
-    
-    model: Plot,
-    
-    initialize: function(models, options) {
-        
-        this.chart = options.chart;
-        this.on("add",function(model){
-            model.chart = this.chart;
-            model.listenToDataChange(model.chart.data);
-            model.setUp();
-        });
-        this.on("change",function(model){
-            model.setUp();
-        })
-        
-    }
-    
-});
-exports = module.exports = Plots
-});
-
-require.define("/lib/models/Plot.js",function(require,module,exports,__dirname,__filename,process,global){var Markers = require('../collections/Markers');
-// A Plot is an object that represents a logical grouping of data, i.e.
-// data from the same key on incoming json objects. It is used to set the 
-// y-axis scale, and convert data values to pixel y-values on the canvas.
-var Plot = Backbone.Model.extend({
-    
-    
-    defaults: {
-
-        // Bounds of the Y axis. A string of "auto" means that the 
-        // Y axis for this plot should scale with the data
-        lowerY: "auto",
-        upperY: "auto",
-        
-        // Maximum number of points to render in 100px space before 
-        // data starts being omitted from rendering.
-        max_detail: 5,
-        
-        // Color of the line/bar/etc that will be drawn.
-        color: "#000000",
-        
-        // The label for the plot (will be displayed
-        // on the y-axis and on pointinfo boxes)
-        label: ""
-        
-    },
-    
-    idAttribute: "key",
-    
-    initialize: function() {
-        this.actualLower = this.get("lowerY");
-        this.actualUpper = this.get("upperY");
-    },
-    
-    listenToDataChange: function(data) {
-        var self = this;
-        this.listenTo(data, "add", function() {
-            if (self.get('lowerY') === "auto" || self.get('upperY') === "auto") self.setUp();
-            else self.trigger("update");
-        });
-    },
-    
-    setUp: function() {
-        
-        // Stores the markers for the y-axis of this plot. 
-        this.markers = new Markers([], {
-            plot: this
-        })
-        
-        // The markers are generated based on the size of the viewport and the upper
-        // and lower bounds of plot y-axis. This will need to be dynamically computed
-        // if the values of lowerY and upperY are set to "auto" and not static numbers.
-        var lower = this.get('lowerY');
-        var upper = this.get('upperY');
-        // Object that holds the minimum and maximum values from the dataset
-        var extrema;
-        var ten_percent;
-        if ( lower === "auto" ) {
-            extrema = this.chart.data.getYExtrema(this.get("key"));
-            // debugger; 
-            // 10% on either side of the extremas
-            ten_percent = (extrema.max - extrema.min)*0.1;
-            if (ten_percent === 0) {
-                if (extrema.max !== 0) ten_percent = Math.abs(extrema.max) * 0.1;
-                else ten_percent = 1;
-            }
-            lower = extrema.min - ten_percent;
-        }
-        if ( upper === "auto" ) {
-            extrema = extrema || this.chart.data.getYExtrema(this.get("key"));
-            ten_percent = ten_percent || (extrema.max - extrema.min)*0.1 ;
-            upper = extrema.max + ten_percent;
-        }
-        
-        // Set the actual bounds
-        this.actualLower = lower;
-        this.actualUpper = upper;
-        
-        // Get the range
-        var range = upper - lower;
-        // Get number of markers to show
-        var max_markers = Math.floor( this.chart.get("viewport_height") / this.chart.get("min_spacing_y"));
-        var pixel_increments = this.chart.get("viewport_height") / max_markers;
-        var value_increments = range / max_markers;
-        // Create labels for the axis
-        for ( var i = 0; i <= max_markers; i++ ) {
-            // Create marker object
-            var marker = { 
-                top: "auto",
-                bottom: i < max_markers ? (i * pixel_increments)+"px" : "auto", 
-                label: this.createAxisLabel(i,value_increments, lower, range),
-                mark_class: ""
-            }
-            if (i === max_markers) {
-                marker.top = "0";
-                marker.mark_class = "top";
-            } else if (i === 0) {
-                marker.mark_class = "bottom";
-            }
-            this.markers.add(marker, {merge: true});
-        }
-        this.trigger("update");
-    },
-    
-    createAxisLabel: function(i, increment, lower, range) {
-        
-        // TODO: smarter algorithm for rounding labels to their significant digits
-        var next = i*increment+lower;
-        
-        if (increment < 1) return Math.round(next*10)/10;
-        else if (increment > 1000000000) return (Math.round(next/10000000)/100)+"B";
-        else if (increment > 1000000) return (Math.round(next/10000)/100)+"M";
-        else if (increment > 100) return (Math.round(next/100)/10)+"K";
-        return Math.round(i*increment);
-    },
-    
-    toViewportY: function(y) {
-        // point = { x: [X], y: [Y] }
-        // debugger;
-        var real_yrange = this.actualUpper - this.actualLower;
-        var pixel_yrange = this.chart.get("viewport_height");
-        var y_ratio = pixel_yrange / real_yrange;
-        var y_pixels = (y-this.actualLower) * y_ratio ;
-        // flip to adjust for downward-facing y axis
-        var y1 = pixel_yrange - y_pixels ;
-        return y1;
-    },
-    
-    serialize: function() {
-        var retval = this.toJSON();
-        retval.markers = this.markers.toJSON();
-        return retval;
-    }
-});
-
-exports = module.exports = Plot
-});
-
-require.define("/lib/collections/Markers.js",function(require,module,exports,__dirname,__filename,process,global){var Marker = require('../models/Marker');
+},{}],17:[function(require,module,exports){
+var Marker = require('../models/Marker');
 var Markers = Backbone.Collection.extend({
     
     model: Marker
@@ -1463,9 +1346,32 @@ var Markers = Backbone.Collection.extend({
 });
 
 exports = module.exports = Markers
+},{"../models/Marker":21}],20:[function(require,module,exports){
+
+var Slider = Backbone.View.extend({
+
+    initialize: function() {
+        
+    },
+    
+    template: Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  this.compilerInfo = [2,'>= 1.0.0-rc.3'];
+helpers = helpers || Handlebars.helpers; data = data || {};
+  
+
+
+  return "<div class=\"slider-lefthandle\"></div>\n<div class=\"slider-righthandle\"></div>";
+  }),
+    
+    render: function() {
+        return this;
+    }
+    
 });
 
-require.define("/lib/models/Marker.js",function(require,module,exports,__dirname,__filename,process,global){var Marker = Backbone.Model.extend({
+exports = module.exports = Slider
+},{}],21:[function(require,module,exports){
+var Marker = Backbone.Model.extend({
     
     defaults: {
         // Set to "top" if the mark should be at the top of the number rather than the bottom
@@ -1491,54 +1397,5 @@ require.define("/lib/models/Marker.js",function(require,module,exports,__dirname
     
 });
 exports = module.exports = Marker
-});
-
-require.define("/examples/scaling/start.js",function(require,module,exports,__dirname,__filename,process,global){// Set up the chart and datasource
-var Chart = require('../../');
-var chart = window.chart = new Chart({
-    
-    max_data: 20,
-    viewport_width: 1000,
-    viewport_height: 400,
-    overview_height: 100,
-    id: "akjdsfhalkjdldfkjasdlfkjasd"
-    
-});
-var datasource = _.extend({}, Backbone.Events);
-
-// Set the source
-chart.setSource(datasource);
-
-$(function() {
-    
-    // Set the element
-    chart.to(document.getElementById("target"));
-    chart.setX("time", function(value){
-        return (new Date(value)).toLocaleTimeString(); 
-    });
-    chart.plot("point1","#0000CC","auto","auto", "Point 1");
-    chart.plot("point2","#00CC00","auto","auto", "Point 2");
-    
-    function genRandomData() {
-        var time = +new Date();
-        var point1 = 5000 - Math.round(Math.random() * 5000);
-        var point2 = Math.round(Math.random() * 100);
-        return { time: time, point1: point1, point2: point2 }
-    }
-    
-    // Trigger events
-    var intval = setInterval(function(){
-        
-        var data = genRandomData();
-        datasource.trigger("data", data);
-        
-    }, 1500);
-    
-    // setTimeout(function(){
-    //     clearInterval(intval);
-    // },1000)
-    
-})
-});
-require("/examples/scaling/start.js");
-})();
+},{}]},{},[1])
+;

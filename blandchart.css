@@ -151,4 +151,5 @@
 }
 .bland-chart .chart-overview {
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px black;
 }
