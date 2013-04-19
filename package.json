@@ -8,5 +8,25 @@
   },
   "devDependencies": {
     "beefy": "0.0.11"
-  }
+  },
+  "gitHead": "9bf58469ed6ed11486711902a5366ebd93f8897a",
+  "description": "ERROR: No README.md file found!",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/andyperlitch/bland-chart.git"
+  },
+  "keywords": [
+    "charting",
+    "backbone",
+    "svg"
+  ],
+  "author": "andy perlitch",
+  "license": "BSD"
 }
