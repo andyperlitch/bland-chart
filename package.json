@@ -1,9 +1,12 @@
 {
-    "name":"bland-chart",
-    "version":"0.0.1",
-    "dependencies": {
-        "browserify":">=2.8.0",
-        "knights-templar":"",
-        "ktbr":""
-    }
+  "name": "bland-chart",
+  "version": "0.0.1",
+  "dependencies": {
+    "browserify": ">=2.8.0",
+    "knights-templar": "",
+    "ktbr": ""
+  },
+  "devDependencies": {
+    "beefy": "0.0.11"
+  }
 }
