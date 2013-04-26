@@ -44,6 +44,6 @@ $(function() {
     
     setTimeout(function(){
         clearInterval(intval);
-    },1000)
+    },20000)
     
 })

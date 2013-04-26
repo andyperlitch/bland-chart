@@ -4,7 +4,8 @@
   "dependencies": {
     "browserify": ">=2.8.0",
     "knights-templar": "",
-    "ktbr": ""
+    "ktbr": "",
+    "bassview": "0.0.3"
   },
   "devDependencies": {
     "beefy": "0.0.11"
