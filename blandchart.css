@@ -1,6 +1,8 @@
 .bland-chart {
   font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", "Helvetica", "Myriad Pro", Myriad, Geneva, Arial, "Lucida Grande", sans-serif;
   font-size: 12px;
+  max-width: 100%;
+  overflow: auto;
 }
 .bland-chart .chart-yaxes,
 .bland-chart .chart-overviewport,
@@ -79,7 +81,7 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  position: relative;
+  position: absolute;
 }
 .bland-chart .chart-overviewport .chart-resizer {
   position: absolute;
