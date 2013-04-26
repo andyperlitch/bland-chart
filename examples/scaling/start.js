@@ -33,14 +33,17 @@ $(function() {
     
     // Trigger events
     var intval = setInterval(function(){
-        
+        if (window.stop === true) {
+            clearInterval(intval);
+            return;
+        }
         var data = genRandomData();
         datasource.trigger("data", data);
         
     }, 1500);
     
-    // setTimeout(function(){
-    //     clearInterval(intval);
-    // },1000)
+    setTimeout(function(){
+        clearInterval(intval);
+    },1000)
     
 })
