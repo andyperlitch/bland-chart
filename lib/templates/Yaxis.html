@@ -1,13 +1,11 @@
-<div class="chart-yaxis" style="color:<%= color %>">
-    <h3 class="yaxis-label"><%= label %></h3>
-    <ul class="<%= key %>-yaxis">
-    
-        <% _.each(markers, function(marker){%>
-        <li class="chart-yaxis-marker <%= marker.mark_class %>" style="top: <%= marker.top %>; bottom:<%= marker.bottom %>;">
-            <span class="label"><%= marker.label %></span>
-            <span class="mark" style="background-color:<%= color %>"></span>
-        </li>
-        <%})%>
-    
-    </ul>
-</div>
+<h3 class="yaxis-label" style="color:<%= color %>"><%= label %></h3>
+<ul class="<%= key %>-yaxis" style="color:<%= color %>">
+
+    <% _.each(markers, function(marker){%>
+    <li class="chart-yaxis-marker <%= marker.mark_class %>" style="top: <%= marker.top %>; bottom:<%= marker.bottom %>;">
+        <span class="label"><%= marker.label %></span>
+        <span class="mark" style="background-color:<%= color %>"></span>
+    </li>
+    <%})%>
+
+</ul>

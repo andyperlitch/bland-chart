@@ -3,6 +3,7 @@
   font-size: 12px;
   max-width: 100%;
   overflow: auto;
+  position: relative;
 }
 .bland-chart .chart-yaxes,
 .bland-chart .chart-overviewport,
@@ -85,25 +86,43 @@
 }
 .bland-chart .chart-overviewport .chart-resizer {
   position: absolute;
-  left: 100%;
-  top: 10px;
-  width: 12px;
-  height: 40px;
-  padding: 5px 1px 5px 5px;
-  border-radius: 0 5px 5px 0;
-  background: #FFF;
-  box-shadow: inset 1px 0 0 #000000, inset 0 0 0 1px rgba(0, 0, 0, 0.4), inset 0 0 10px -3px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-  cursor: col-resize;
-}
-.bland-chart .chart-overviewport .chart-resizer.active {
-  box-shadow: inset 1px 0 0 #000000, inset 0 2px 12px -3px rgba(0, 0, 0, 0.5), 0 -1px 2px -1px rgba(0, 0, 0, 0.4);
+  bottom: 1px;
+  right: 1px;
+  cursor: se-resize;
+  z-index: 2;
+  height: 17px;
+  width: 17px;
+  background-color: #EEE;
+  border-radius: 5px 0 0 0;
+  box-shadow: inset 0 -1px 12px -5px, 0 0 0 1px #aaaaaa;
+  border: none;
 }
 .bland-chart .chart-overviewport .chart-resizer .resizer-grip {
-  height: 40px;
-  width: 1px;
-  margin: 0 1px;
-  float: left;
-  background: rgba(0, 0, 0, 0.3);
+  height: 1px;
+  width: 70%;
+  height: 0px;
+  margin: 2px auto;
+  border-color: #AAA;
+  border-width: 1px 0 0;
+  border-style: solid;
+  position: relative;
+  -webkit-transform: rotate(-45deg);
+  -moz-transform: rotate(-45deg);
+}
+.bland-chart .chart-overviewport .chart-resizer .resizer-grip:nth-child(1) {
+  left: -2px;
+  top: 4px;
+  width: 60%;
+}
+.bland-chart .chart-overviewport .chart-resizer .resizer-grip:nth-child(2) {
+  top: 4px;
+  width: 80%;
+  left: 0px;
+}
+.bland-chart .chart-overviewport .chart-resizer .resizer-grip:nth-child(3) {
+  top: 3px;
+  left: 3px;
+  width: 61%;
 }
 .bland-chart .chart-viewport {
   position: relative;
