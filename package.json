@@ -1,6 +1,6 @@
 {
   "name": "bland-chart",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "dependencies": {
     "browserify": ">=2.8.0",
     "knights-templar": "",
